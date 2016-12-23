@@ -14,9 +14,10 @@ class App extends Component {
 	constructor(props) {
 		super()
 		this.list = []
-		this.selectedIndex = []
-		this.shiftMoveIndex = []
+		this.selectedIndexArr = []
+		this.shiftMoveIndexArr = []
 		this.lastSelected = -1
+		this.lastHover = -1
 		this.shift = false
 		this.ctrl = false
 	}
@@ -31,8 +32,8 @@ class App extends Component {
 			this.forceUpdate()
 		})
 		//bind keydown event
-		document.addEventListener('keydown', this.keypress.bind(this))
-		document.addEventListener('keyup', this.keypress.bind(this))
+		document.addEventListener('keydown', this.keydown.bind(this))
+		document.addEventListener('keyup', this.keyup.bind(this))
 	}
 
 	render() {
@@ -73,7 +74,7 @@ class App extends Component {
 	}
 
 	selectOne(index) {
-		this.selectedIndex.push(index)
+		this.selectedIndexArr.push(index)
 		this.lastSelected = index
 		this.refs[index].select(true)	
 	}
@@ -83,78 +84,136 @@ class App extends Component {
 			//selected
 			if (this.ctrl) {
 				//ctrl is down
+				let oldLastSelectedIndex = this.lastSelected
 				this.selectOne(index)
+				if (oldLastSelectedIndex != -1) {
+					this.refs[oldLastSelectedIndex].forceUpdate()
+				}
 			}
 			else if (this.shift) {
 				//shift is down
 				if (this.lastSelected == -1) {
 					this.selectOne(index)
 				}else {
+					this.shift = false
 					let min = this.lastSelected<index?this.lastSelected:index
 					let max = this.lastSelected<index?index:this.lastSelected
-					console.log(this.lastSelected)
 					console.log(min + ' '  + max)
 					for(let i = min; i <= max; i++) {
-						let itemIndex = this.selectedIndex.findIndex(item => item == i)
-						if (itemIndex == -1) {
-							this.selectOne(i)
-						}
+						this.refs[i].shiftHover = false
+						// let itemIndex = this.selectedIndexArr.findIndex(item => item == i)
+						// if (itemIndex == -1) {
+						// 	this.selectOne(i)
+						// }
+						this.selectOne(i)
 					}
 					this.lastSelected = index
 				}
 			}
 			else {
 				//no keyDown event
-				this.selectedIndex.forEach(item => {
+				this.selectedIndexArr.forEach(item => {
 					this.refs[item].select(false)
 				})
-				this.selectedIndex = []
+				this.selectedIndexArr = []
 				this.selectOne(index)
 			}
 		}else {
 			// cancel selected
-			let itemIndex = this.selectedIndex.findIndex(item => item == index)
-			if (itemIndex != -1) {
-				this.selectedIndex.splice(itemIndex,1)
-				this.refs[index].select(false)
+			if (this.ctrl) {
+				let itemIndex = this.selectedIndexArr.findIndex(item => item == index)
+				if (itemIndex != -1) {
+					let oldLastSelectedIndex = this.lastSelected
+					this.selectedIndexArr.splice(itemIndex,1)
+					this.refs[index].select(false)
+					this.lastSelected = -1
+					if (this.oldLastSelectedIndex != -1) this.refs[oldLastSelectedIndex].forceUpdate()
+				}else {
+					console.log('something wrong')
+				}
+			}else if (this.shift) {
+				if (this.selectedIndexArr.length == 1) {
+					this.lastSelected = -1
+					this.refs[this.selectedIndexArr[0]].shiftHover = false
+					this.refs[this.selectedIndexArr[0]].select(false)
+					this.shiftMoveIndexArr = []
+					this.selectedIndexArr = []
+				}else {
+						this.shift = false
+					let min = this.lastSelected<index?this.lastSelected:index
+					let max = this.lastSelected<index?index:this.lastSelected
+					console.log(min + ' '  + max)
+					for(let i = min; i <= max; i++) {
+						this.refs[i].shiftHover = false
+						this.selectOne(i)
+					}
+					this.lastSelected = index
+				}
 			}else {
+				this.selectedIndexArr.forEach(item => {
+					this.refs[item].isSelected = false
+					this.refs[item].forceUpdate()
+				})
+				this.selectedIndexArr = []
+				this.selectOne(index)
 			}
 		}
+		console.log(this.selectedIndexArr)
+		console.log(this.lastSelected)
 	}
 
-	keypress(event) {
+	keydown(event) {
 		if (event.ctrlKey == this.ctrl && event.shiftKey == this.shift) return
 		this.ctrl = event.ctrlKey
 		this.shift = event.shiftKey
+		if (this.ctrl) {
+			if (this.lastSelected == -1) return
+			this.refs[this.lastSelected].forceUpdate()
+		}
 
+		if (this.shift) {
+			if (this.lastHover == -1) return
+			this.mouseEnter(this.lastHover)
+		}
+	}
+
+	keyup(event) {
+		if (event.ctrlKey == this.ctrl && event.shiftKey == this.shift) return
+		this.ctrl = event.ctrlKey
+		this.shift = event.shiftKey
+		if (!this.ctrl) {
+			if (this.lastSelected == -1) return
+			this.refs[this.lastSelected].forceUpdate()
+		}
 		if (!this.shift) {
-			this.shiftMoveIndex.forEach(item => {
+			this.shiftMoveIndexArr.forEach(item => {
 				this.refs[item].hover(false)
 			})
-			this.shiftMoveIndex = []
+			this.shiftMoveIndexArr = []
 		}
 	}
 
 	mouseEnter(index) {
-		if (!this.shift) return
+		this.lastHover = index
+		if (!this.shift || this.lastSelected == -1) return
 		let min = this.lastSelected<index?this.lastSelected:index
 		let max = this.lastSelected<index?index:this.lastSelected
 		//remove style
 		let newShiftArr = []
-		this.shiftMoveIndex.forEach(item => {
+		this.shiftMoveIndexArr.forEach(item => {
 			if (item > max || item < min) {
 				this.refs[item].hover(false)
 			}else {
 				newShiftArr.push(item)
 			}
 		})
-		this.shiftMoveIndex = newShiftArr
+		this.shiftMoveIndexArr = newShiftArr
 		//add style
 		for(let i = min; i<=max; i++) {
 			if (this.refs[i].shiftHover) {
 				
 			}else {
-				this.shiftMoveIndex.push(i)
+				this.shiftMoveIndexArr.push(i)
 				this.refs[i].hover(true)
 			}
 		}

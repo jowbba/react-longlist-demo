@@ -30,7 +30,7 @@ app.on('ready', function() {
 ipcMain.on('getTestList', e => {
 	let arr = []
 	console.log((new Date()).getTime())
-	for (let i = 0; i < 100; i++) {
+	for (let i = 0; i < 1000; i++) {
 		arr.push({
 			name:Math.random()*10000,
 			date:(new Date()),
