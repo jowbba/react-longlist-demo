@@ -1,13 +1,13 @@
 import { ipcRenderer } from 'electron'
-
 import React, { Component, createClass } from 'react'
 import ReactDom from 'react-dom'
+
 import { Divider  } from 'material-ui'
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
 import lightBaseTheme from 'material-ui/styles/baseThemes/lightBaseTheme'
 import getMuiTheme from 'material-ui/styles/getMuiTheme'
-
 import css from './assets/index'
+
 import Row from './components/Row'
 
 class App extends Component {
@@ -25,15 +25,23 @@ class App extends Component {
 	componentDidMount() {
 		ipcRenderer.send('getTestList')
 		ipcRenderer.on('returnList', (e, list) => {
-			console.log('receive list...')
-			console.log((new Date()).getTime())
 			this.list = []
 			this.list = list
 			this.forceUpdate()
 		})
+
 		//bind keydown event
 		document.addEventListener('keydown', this.keydown.bind(this))
 		document.addEventListener('keyup', this.keyup.bind(this))
+	}
+	
+	// log render time
+	componentWillUpdate() {
+		console.time('update')
+	}
+
+	componentDidUpdate() {
+		console.timeEnd('update')
 	}
 
 	render() {
@@ -60,30 +68,21 @@ class App extends Component {
 				})}
 				</div>
 			</div>
-			)
+		)
 	}
-
-	componentWillUpdate() {
-		console.log('will update')
-		console.log((new Date()).getTime())
-	}
-
-	componentDidUpdate() {
-		console.log('did update')
-		console.log((new Date()).getTime())
-	}
-
+	
+	// set selected state for a row
 	selectOne(index) {
 		this.selectedIndexArr.push(index)
 		this.lastSelected = index
 		this.refs[index].select(true)	
 	}
-
+	
 	rowSelect(isSelected,index) {
 		if (isSelected) {
 			//selected
 			if (this.ctrl) {
-				//ctrl is down
+				//ctrl is down (remove old lastSelected row state)
 				let oldLastSelectedIndex = this.lastSelected
 				this.selectOne(index)
 				if (oldLastSelectedIndex != -1) {
@@ -91,7 +90,7 @@ class App extends Component {
 				}
 			}
 			else if (this.shift) {
-				//shift is down
+				//shift is down (select list between selected and lastSelected)
 				if (this.lastSelected == -1) {
 					this.selectOne(index)
 				}else {
@@ -101,17 +100,13 @@ class App extends Component {
 					console.log(min + ' '  + max)
 					for(let i = min; i <= max; i++) {
 						this.refs[i].shiftHover = false
-						// let itemIndex = this.selectedIndexArr.findIndex(item => item == i)
-						// if (itemIndex == -1) {
-						// 	this.selectOne(i)
-						// }
 						this.selectOne(i)
 					}
 					this.lastSelected = index
 				}
 			}
 			else {
-				//no keyDown event
+				//no keyDown event (cancel state of others selected row)
 				this.selectedIndexArr.forEach(item => {
 					this.refs[item].select(false)
 				})
@@ -139,7 +134,8 @@ class App extends Component {
 					this.shiftMoveIndexArr = []
 					this.selectedIndexArr = []
 				}else {
-						this.shift = false
+					// there is a bug / todo
+					this.shift = false
 					let min = this.lastSelected<index?this.lastSelected:index
 					let max = this.lastSelected<index?index:this.lastSelected
 					console.log(min + ' '  + max)
@@ -150,6 +146,7 @@ class App extends Component {
 					this.lastSelected = index
 				}
 			}else {
+				// clear selectedArr && select lastone
 				this.selectedIndexArr.forEach(item => {
 					this.refs[item].isSelected = false
 					this.refs[item].forceUpdate()
@@ -167,11 +164,13 @@ class App extends Component {
 		this.ctrl = event.ctrlKey
 		this.shift = event.shiftKey
 		if (this.ctrl) {
+			// update one row
 			if (this.lastSelected == -1) return
 			this.refs[this.lastSelected].forceUpdate()
 		}
 
 		if (this.shift) {
+			// update row between last selected row and last hover row
 			if (this.lastHover == -1) return
 			this.mouseEnter(this.lastHover)
 		}
@@ -182,6 +181,7 @@ class App extends Component {
 		this.ctrl = event.ctrlKey
 		this.shift = event.shiftKey
 		if (!this.ctrl) {
+			// remove state from last selected row
 			if (this.lastSelected == -1) return
 			this.refs[this.lastSelected].forceUpdate()
 		}

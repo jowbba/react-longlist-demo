@@ -6,7 +6,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "devel": "nodemon --exec electron devel.js",
+    "devel": "nodemon --exec electron main.js",
     "build": "babel node --out-dir build",
     "mocha": "mocha --compilers js:babel-core/register --recursive --sort",
     "devel2": "electron devel.js"

@@ -10,12 +10,12 @@ class Row extends Component {
 		this.show = true
 		this.isSelected = false
 		this.shiftHover = false
-
+		// update row state of selected
 		this.select = (s) => {
 			this.isSelected = s
 			this.forceUpdate()
 		}
-
+		
 		this.hover = (h) => {
 			this.shiftHover = h
 			this.forceUpdate()
